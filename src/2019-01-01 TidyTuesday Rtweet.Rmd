@@ -1,0 +1,72 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r,echo=FALSE}
+pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
+               ggplot2)
+# Let's have a look at our data
+tt_tweets <- readRDS("data/tidytuesday_tweets.rds") %>% clean_names()
+summary(tt_tweets)
+```
+
+
+```{r Who are the top TidyTuesday tweeter?}
+tt_tweets %>% filter(!is.na(user_id), is_retweet ==F) %>% 
+  group_by(screen_name, is_retweet) %>% 
+  count(screen_name) %>% 
+  arrange(desc(n)) %>% as.data.frame() %>% ungroup() %>% 
+  slice_head(n =10)%>% 
+  ggplot(aes(x = reorder(screen_name,n), y=n, fill= is_retweet)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw()+
+  theme(legend.position = "none")+
+  labs(title = "Top 10 users for tidyTuesday tweets")+
+  ylab("Number of tweets for TidyTuesday")+
+  xlab("UserID")
+
+```
+
+```{r How many retweets are there? who has top retweet count?}
+tt_tweets %>% 
+  group_by(screen_name) %>% 
+  summarise(sum_retweet_count = sum(retweet_count)) %>% 
+  arrange(desc(sum_retweet_count)) %>% 
+  slice_head(n = 20) %>% 
+  ggplot(aes(x=reorder(screen_name, sum_retweet_count), y=sum_retweet_count, fill = screen_name)) +
+  geom_col()+
+  theme_bw()+
+  scale_fill_manual(values = c(rep("#00a19C", 20)))+
+  coord_flip()+
+  xlab("User Id")+ ylab("Number of retweets")+
+  theme(legend.position = "none")+
+  labs(title = "Top 20 tidyTuesday users based on retweet counts")
+
+```
+
+
+```{r Posts with favourite counts}
+hashtag_colnames <- str_c("hashtags_", c(1:10))
+tt_tweets %>% filter(!is.na(user_id)) %>% 
+  group_by(screen_name) %>% 
+  summarise(total_favourite_counts = sum(favourites_count)) %>% ungroup() %>% 
+  arrange(desc(total_favourite_counts)) %>% 
+  # separate(hashtags, sep = ",", into = hashtag_colnames)
+  slice_head(n= 20) %>% 
+  ggplot(aes(x=reorder(screen_name, total_favourite_counts), y = total_favourite_counts, fill = screen_name))+
+  geom_col()+
+  scale_fill_manual(values =c(rep("#001a9C", 20)))+
+  theme_bw()+
+  theme(legend.position = "none")+ 
+  coord_flip()+
+  xlab("User Id") + 
+  ylab("Total favourite counts")+
+  labs(title = "Top 20 favourited users")
+```
+
