@@ -9,10 +9,10 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r,echo=FALSE}
 pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
-               ggplot2)
+               ggplot2, ggbump)
 # Let's have a look at our data
-tt_tweets <- readRDS("data/tidytuesday_tweets.rds") %>% clean_names()
-summary(tt_tweets)
+tt_tweets <- readRDS("../data/tidytuesday_tweets.rds") %>% clean_names()
+# summary(tt_tweets)
 ```
 
 
@@ -68,5 +68,59 @@ tt_tweets %>% filter(!is.na(user_id)) %>%
   xlab("User Id") + 
   ylab("Total favourite counts")+
   labs(title = "Top 20 favourited users")
+```
+
+### R Stats Tweets
+
+```{r Data Loading}
+rstats <- readRDS("../data/rstats_tweets.RDS") %>% as.data.frame()
+
+rstats %>% glimpse()
+length(unique(rstats$user_id))
+range(rstats$created_at, na.rm = T)
+
+# Make random colour
+set.seed(42)
+custom_palette <- c(RColorBrewer::brewer.pal(9, "Set1"),
+                    RColorBrewer::brewer.pal(6, "Dark2")) %>% 
+  sample(15)
+
+rstats %>% mutate(year = year(created_at), month = month(created_at)) %>% 
+  group_by(year, month, user_id) %>% 
+  count(screen_name, name = "total_tweet") %>% ungroup() %>% 
+  arrange(year, month, desc(total_tweet)) %>% 
+  group_by(year, month) %>% 
+  summarise(total_tweet = sum(total_tweet, na.rm= T)) %>%ungroup() %>% 
+  filter(year >= 2010) %>% 
+  mutate(month = as.factor(month)) %>% 
+  ggplot(aes(x = month, y = total_tweet, fill = month)) +
+  geom_col()+
+  scale_fill_manual(values = custom_palette)+
+  facet_wrap(~year)+theme_bw()+
+  labs (title = "Total number of tweets across the years")
+```
+As we can see, there has been significant increase in Tweets for tidyTuesday beginning 2016 - 2018.
+
+Let's find out the top Users in the years of 2017 and 2018.
+
+### Top Users in 2017 and 2018.
+```{r Top tweets in 2017 and 2018}
+rstats %>% mutate(year = year(created_at), month = month(created_at)) %>% 
+  filter(year >= 2017) %>% 
+  group_by(year, month) %>% 
+  count(screen_name, name = "tweets") %>% 
+  arrange(desc(tweets)) %>% 
+  slice(1:2)%>% ungroup() %>% 
+  mutate(month = as.factor(month)) %>% 
+  ggplot(aes(x= month, y = tweets, fill = month)) +
+  geom_col()+
+  theme_bw()+
+  facet_wrap(~year + screen_name)+
+  # coord_flip()+
+  xlab("month")+
+  ylab("# of tweets")+
+  theme(legend.position = "right")+
+  labs(title = "Total 2 tweeters by month time")
+
 ```
 
