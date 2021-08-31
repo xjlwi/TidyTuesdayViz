@@ -1,11 +1,8 @@
 ---
-title: "R Notebook"
+title: "2019-01-01 TidyTuesday R Tweet data viz"
+author: Crystal Lwi
 output: html_notebook
 ---
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
 ```{r,echo=FALSE}
 pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
