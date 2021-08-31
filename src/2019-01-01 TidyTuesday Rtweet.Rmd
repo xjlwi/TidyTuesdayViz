@@ -1,0 +1,123 @@
+---
+title: "2019-01-01 TidyTuesday R Tweet data viz"
+author: Crystal Lwi
+output: html_notebook
+---
+
+```{r,echo=FALSE}
+pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
+               ggplot2, ggbump)
+# Let's have a look at our data
+tt_tweets <- readRDS("../data/tidytuesday_tweets.rds") %>% clean_names()
+# summary(tt_tweets)
+```
+
+
+```{r Who are the top TidyTuesday tweeter?}
+tt_tweets %>% filter(!is.na(user_id), is_retweet ==F) %>% 
+  group_by(screen_name, is_retweet) %>% 
+  count(screen_name) %>% 
+  arrange(desc(n)) %>% as.data.frame() %>% ungroup() %>% 
+  slice_head(n =10)%>% 
+  ggplot(aes(x = reorder(screen_name,n), y=n, fill= is_retweet)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw()+
+  theme(legend.position = "none")+
+  labs(title = "Top 10 users for tidyTuesday tweets")+
+  ylab("Number of tweets for TidyTuesday")+
+  xlab("UserID")
+
+```
+
+```{r How many retweets are there? who has top retweet count?}
+tt_tweets %>% 
+  group_by(screen_name) %>% 
+  summarise(sum_retweet_count = sum(retweet_count)) %>% 
+  arrange(desc(sum_retweet_count)) %>% 
+  slice_head(n = 20) %>% 
+  ggplot(aes(x=reorder(screen_name, sum_retweet_count), y=sum_retweet_count, fill = screen_name)) +
+  geom_col()+
+  theme_bw()+
+  scale_fill_manual(values = c(rep("#00a19C", 20)))+
+  coord_flip()+
+  xlab("User Id")+ ylab("Number of retweets")+
+  theme(legend.position = "none")+
+  labs(title = "Top 20 tidyTuesday users based on retweet counts")
+
+```
+
+
+```{r Posts with favourite counts}
+hashtag_colnames <- str_c("hashtags_", c(1:10))
+tt_tweets %>% filter(!is.na(user_id)) %>% 
+  group_by(screen_name) %>% 
+  summarise(total_favourite_counts = sum(favourites_count)) %>% ungroup() %>% 
+  arrange(desc(total_favourite_counts)) %>% 
+  # separate(hashtags, sep = ",", into = hashtag_colnames)
+  slice_head(n= 20) %>% 
+  ggplot(aes(x=reorder(screen_name, total_favourite_counts), y = total_favourite_counts, fill = screen_name))+
+  geom_col()+
+  scale_fill_manual(values =c(rep("#001a9C", 20)))+
+  theme_bw()+
+  theme(legend.position = "none")+ 
+  coord_flip()+
+  xlab("User Id") + 
+  ylab("Total favourite counts")+
+  labs(title = "Top 20 favourited users")
+```
+
+### R Stats Tweets
+
+```{r Data Loading}
+rstats <- readRDS("../data/rstats_tweets.RDS") %>% as.data.frame()
+
+rstats %>% glimpse()
+length(unique(rstats$user_id))
+range(rstats$created_at, na.rm = T)
+
+# Make random colour
+set.seed(42)
+custom_palette <- c(RColorBrewer::brewer.pal(9, "Set1"),
+                    RColorBrewer::brewer.pal(6, "Dark2")) %>% 
+  sample(15)
+
+rstats %>% mutate(year = year(created_at), month = month(created_at)) %>% 
+  group_by(year, month, user_id) %>% 
+  count(screen_name, name = "total_tweet") %>% ungroup() %>% 
+  arrange(year, month, desc(total_tweet)) %>% 
+  group_by(year, month) %>% 
+  summarise(total_tweet = sum(total_tweet, na.rm= T)) %>%ungroup() %>% 
+  filter(year >= 2010) %>% 
+  mutate(month = as.factor(month)) %>% 
+  ggplot(aes(x = month, y = total_tweet, fill = month)) +
+  geom_col()+
+  scale_fill_manual(values = custom_palette)+
+  facet_wrap(~year)+theme_bw()+
+  labs (title = "Total number of tweets across the years")
+```
+As we can see, there has been significant increase in Tweets for tidyTuesday beginning 2016 - 2018.
+
+Let's find out the top Users in the years of 2017 and 2018.
+
+### Top Users in 2017 and 2018.
+```{r Top tweets in 2017 and 2018}
+rstats %>% mutate(year = year(created_at), month = month(created_at)) %>% 
+  filter(year >= 2017) %>% 
+  group_by(year, month) %>% 
+  count(screen_name, name = "tweets") %>% 
+  arrange(desc(tweets)) %>% 
+  slice(1:2)%>% ungroup() %>% 
+  mutate(month = as.factor(month)) %>% 
+  ggplot(aes(x= month, y = tweets, fill = month)) +
+  geom_col()+
+  theme_bw()+
+  facet_wrap(~year + screen_name)+
+  # coord_flip()+
+  xlab("month")+
+  ylab("# of tweets")+
+  theme(legend.position = "right")+
+  labs(title = "Total 2 tweeters by month time")
+
+```
+
