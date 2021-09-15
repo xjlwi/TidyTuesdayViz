@@ -1,0 +1,118 @@
+---
+title: "2021-01-12 TidyTuesday Artist Tate"
+output: html_notebook
+---
+
+Author: Crystal Lwi 
+
+```{r utils, echo=F}
+pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
+               ggplot2, plotly)
+```
+
+```{r raw data}
+artists <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-12/artists.csv") %>% as.data.frame()
+artwork <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-12/artwork.csv") %>% as.data.frame()
+
+artists <- artists %>% clean_names()
+artwork <- artwork %>% clean_names()
+```
+
+```{r Art as gender}
+artists %>% glimpse()
+unique(artists$year_of_birth)
+artists %>% filter(!is.na(gender)) %>% 
+  count(gender)
+```
+Given that most of the artists are male, let's have a look at when they are born.
+
+```{r Year artists was born}
+yr <- artists %>% filter(!is.na(year_of_birth), !is.na(gender)) %>% 
+  group_by(gender) %>% 
+  count(year_of_birth) %>% 
+  ggplot(aes(x = year_of_birth, y = n, color = gender))+
+  geom_line()+theme_bw(base_size = 13)+
+  ylab("Number of artists born")+
+  xlab("Year")+
+  labs(title= "Artists born by year")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+yr %>% ggplotly()
+```
+Starting from artists born in 1930-s the number of female artists increased. 
+
+```{r Art by year}
+art <- right_join(artists, artwork %>% rename(artwork_id = id, artwork_url = url), 
+                  by = c("id" = 'artist_id'))
+art %>% filter(!is.na(gender)) %>% 
+  group_by(gender) %>% 
+  count()
+
+```
+Now we can clearly see that there are almost 50x more male artwork as compared to female. 
+
+```{r Artworks by decades}
+ggplotly(art %>% filter(!is.na(gender)) %>% 
+  group_by(gender, year) %>% 
+  count(gender) %>% 
+  ggplot(aes(x = year, y = n, color = gender))+
+  geom_line()+ theme_bw(base_size = 13)+
+  ylab("Number of artwork")+
+  xlab("Year")+
+  labs(title= "Artworks by year")+
+  theme(plot.title = element_text(hjust = 0.5)))
+```
+
+Artworks distribution show very high by males in the 1800-s century. Sharp decline in artworks in 1846 - 1964. Early 19th century of Europe was facing industrialisation. As a result of this, there could have been fewer artists during that period producing artworks.
+In response to these changes going on in society, the movement of Realism emerged. Realism sought to accurately portray the conditions and hardships of the poor in the hopes of changing society.
+
+```{r what else can we look at? medium of artwork, size of artwork, include=FALSE}
+art %>% head(20)
+unique(art$artist_role)
+
+medium <- art %>% 
+  filter(artist_role == "artist") %>% 
+  mutate(
+    decade = round(year / 10) * 10,
+    medium = gsub("[0-9+]", "",tolower(medium)),
+    screenprint = ifelse(grepl("screenprint", medium) ==T, 1, 0),
+    burlap = ifelse(grepl("burlap", medium)==T, 1, 0),
+    canvas = ifelse(grepl("canvas", medium)==T, 1, 0),
+    paper = ifelse(grepl("paper", medium)==T, 1,0),
+    photograph = ifelse(grepl("photographs", medium)==T, 1,0),
+    acrylic = ifelse(grepl("acrylic", medium)==T, 1, 0),
+    wood = ifelse(grepl("board|wood", medium) == T, 1, 0),
+    oil_paint = ifelse(grepl("oil paint", medium) == T, 1,0),
+    chalk_pastel_pen_ink = ifelse(grepl("chalk|pastel|pen|ink", medium)==T, 1, 0),
+    printed = ifelse(grepl("print", medium)==T, 1, 0),
+    gelatin_silver = ifelse(grepl("gelatin_silver", medium)==T, 1, 0),
+    lithograph = ifelse(grepl("lithograph", medium)== T, 1,0),
+    decade_category = case_when(decade < 1600 ~ "16 century",
+                                decade >= 1600 & decade < 1700 ~ "17 century",
+                                decade >=1700 & decade<1800 ~ "18 century",
+                                decade >=1800 & decade<1900 ~ "19 century",
+                                decade >=1900 & decade<2000 ~ "20 century", 
+                                decade >= 2000 ~ "21 century")
+) %>% 
+  group_by (decade_category, gender) %>% 
+  summarise_at(vars(screenprint:lithograph), sum, na.rm = T) %>% 
+  ungroup()
+
+```
+
+```{r}
+ggplotly(medium %>% filter(!is.na(decade_category), !is.na(gender)) %>% 
+  ggplot(aes(x = decade_category, y = canvas, fill = gender))+
+  geom_col(position = 'dodge')+
+    ggtitle("Canvas by decades")+
+  theme_bw())
+```
+
+
+```{r}
+ggplotly(medium %>% filter(!is.na(decade_category), !is.na(gender)) %>% 
+  ggplot(aes(x = decade_category, y = paper, fill = gender))+
+  geom_col(position = 'dodge')+
+  ggtitle("Paper by decades")+
+  theme_bw())
+```
