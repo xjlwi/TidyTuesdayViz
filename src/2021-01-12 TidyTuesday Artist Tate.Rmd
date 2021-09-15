@@ -116,4 +116,3 @@ ggplotly(medium %>% filter(!is.na(decade_category), !is.na(gender)) %>%
   ggtitle("Paper by decades")+
   theme_bw())
 ```
-
