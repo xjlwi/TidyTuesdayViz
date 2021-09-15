@@ -51,9 +51,8 @@ art %>% filter(!is.na(gender)) %>%
 ```
 Now we can clearly see that there are almost 50x more male artwork as compared to female. 
 
-```{r Artworks by decades, include=F}
-names(art)
-artwork_year <- art %>% filter(!is.na(gender)) %>% 
+```{r Artworks by decades}
+ggplotly(art %>% filter(!is.na(gender)) %>% 
   group_by(gender, year) %>% 
   count(gender) %>% 
   ggplot(aes(x = year, y = n, color = gender))+
@@ -61,14 +60,13 @@ artwork_year <- art %>% filter(!is.na(gender)) %>%
   ylab("Number of artwork")+
   xlab("Year")+
   labs(title= "Artworks by year")+
-  theme(plot.title = element_text(hjust = 0.5))
-artwork_year %>% ggplotly()
+  theme(plot.title = element_text(hjust = 0.5)))
 ```
 
 Artworks distribution show very high by males in the 1800-s century. Sharp decline in artworks in 1846 - 1964. Early 19th century of Europe was facing industrialisation. As a result of this, there could have been fewer artists during that period producing artworks.
 In response to these changes going on in society, the movement of Realism emerged. Realism sought to accurately portray the conditions and hardships of the poor in the hopes of changing society.
 
-```{r what else can we look at? medium of artwork, size of artwork?}
+```{r what else can we look at? medium of artwork, size of artwork, include=FALSE}
 art %>% head(20)
 unique(art$artist_role)
 
@@ -96,9 +94,26 @@ medium <- art %>%
                                 decade >=1900 & decade<2000 ~ "20 century", 
                                 decade >= 2000 ~ "21 century")
 ) %>% 
-  group_by (decade_category) %>% 
+  group_by (decade_category, gender) %>% 
   summarise_at(vars(screenprint:lithograph), sum, na.rm = T) %>% 
   ungroup()
-medium %>% View()
+
+```
+
+```{r}
+ggplotly(medium %>% filter(!is.na(decade_category), !is.na(gender)) %>% 
+  ggplot(aes(x = decade_category, y = canvas, fill = gender))+
+  geom_col(position = 'dodge')+
+    ggtitle("Canvas by decades")+
+  theme_bw())
+```
+
+
+```{r}
+ggplotly(medium %>% filter(!is.na(decade_category), !is.na(gender)) %>% 
+  ggplot(aes(x = decade_category, y = paper, fill = gender))+
+  geom_col(position = 'dodge')+
+  ggtitle("Paper by decades")+
+  theme_bw())
 ```
 
