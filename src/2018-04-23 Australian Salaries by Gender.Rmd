@@ -1,0 +1,63 @@
+---
+title: "2018-04-23 Australian Salary"
+output: html_notebook
+---
+
+### Australian Salary
+
+```{r}
+pacman::p_load(dplyr, data.table, purrr, lubridate, janitor, stringr, tidyr,
+               ggplot2)
+raw_data <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018/2018-04-23/week4_australian_salary.csv") %>% 
+  as.data.frame() %>% clean_names()
+not_all_na  <- function(x) any(!is.na(x))
+
+## Data cleaning
+df_ <- raw_data %>% select(-c(x)) %>%
+  mutate(gender = tolower(gender),
+         gender_rank = as.numeric(gender_rank)) %>% 
+  separate(occupation,sep = "; ", convert = T, into = paste0("job_", 1:30)) %>% 
+  select(where(not_all_na)) %>% 
+  arrange(gender, gender_rank)
+
+```
+
+```{r Gender rank by salary}
+summary(df_$gender_rank)
+ggplotly(df_ %>% ggplot(aes(x = gender_rank, y = average_taxable_income, color = gender)) +
+  geom_line()+theme_bw()+
+  scale_x_continuous(limits = c(0, 100)))
+```
+Here we could clearly see that female has lower average taxable income as compared to men. In fact the gap is wider where the rank of the gender is lower.
+ 
+
+```{r}
+ggplotly(df_ %>% ggplot(aes(x= gender, y = average_taxable_income))+
+  geom_boxplot()+
+  theme_bw())
+```
+
+```{r Unique jobs}
+df_ %>% filter(gender == 'female') %>% 
+  arrange(desc(individuals)) %>% 
+  slice_head(n = 10) %>% 
+  ggplot(aes(x = reorder(job_1,individuals), y= individuals, fill=gender)) +
+  geom_col(position = 'dodge')+theme_bw()+
+  theme(axis.text.x = element_text(angle = 15))+
+  xlab("jobs")+
+  ylab("number of individuals")
+  
+```
+<i> Females are generally in the hospitality and services industry, for adminstration, and also in healthcares.
+
+```{r}
+df_ %>% filter(gender == 'male') %>% 
+  arrange(desc(individuals)) %>% 
+  slice_head(n = 10) %>% 
+  ggplot(aes(x = reorder(job_1,individuals), y= individuals, fill=gender)) +
+  geom_col(position = 'dodge')+theme_bw()+
+  theme(axis.text.x = element_text(angle = 15))+
+  xlab("jobs")+
+  ylab("number of individuals")
+```
+<i> Males are generally concrete mixer driver, CEO-s and general managers. 
